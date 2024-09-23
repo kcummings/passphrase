@@ -11,7 +11,7 @@ template abort(msg: string) =
   quit(QuitFailure)
 
 func isValidDiceRoll(diceroll: string): bool =
-  len(diceroll) == 5 and count(diceroll, "123456") == 5
+  len(diceroll) == 5 and count(diceroll, {'1'..'6'}) == 5
 
 proc replaceLowerLetterWith(line, options: string): string =
   # Replace a random lowercase letter in line with a random character from options.
@@ -80,7 +80,7 @@ else:
 # If not already present, insure there are requested number of digits in passphrase.
   cnt = count(passphrase, Digits)
   for _ in cnt..numDigitsinPhrase-1:
-    passphrase = replaceLowerLetterWith(passphrase, "0123456789")
+    passphrase = replaceLowerLetterWith(passphrase, "23456789") # Don't use zero or one to avoid confusion with oh and el
 
 # Pick a random letter, uppercase it, and overwrite a different random letter
 # usually resulting in a misspelling!
