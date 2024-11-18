@@ -1,3 +1,4 @@
+import std/sequtils
 import std/tables
 import std/strutils
 import std/cmdline
@@ -25,6 +26,12 @@ proc replaceLowerLetterWith(line, options: string): string =
     if i >= len(line):
       i = 0   # wrapping around will guarantee we'll find a letter
   result[i] = c
+
+proc addEntropy(ps, insertChars: string, maxInsertions: int): string =
+  result = ps
+  let cnt = count(result, insertChars)
+  for _ in cnt..maxInsertions-1:
+    result = replaceLowerLetterWith(result, insertChars)
 
 proc extractNumber(arg: string): int =
   # arg is of form:  x:n where x is u|d|c and n is a number we are returning
@@ -66,31 +73,11 @@ passphrase = passphrase.strip()
 echo passphrase # first version directly from word list
 
 if count(passphrase, LowercaseLetters) < numSpecialCharsinPhrase + numDigitsinPhrase + numUpperLettersinPhrase + 1:
-  echo "Not enough lowercase letters to add more entropy! Add more words."
-else:
+  abort "Not enough lowercase letters to add more entropy! Add more words."
 
-  ### ADD MORE ENTROPY ###
-  var cnt = 0
-# If not already present, insure there are requested number of special characters in passphrase.
-  cnt = count(passphrase, "&'!#$%()*+-:=?@")
-  for _ in cnt..numSpecialCharsinPhrase-1:
-    # Paypal only accepts these special characters: !@#$%^&*().
-    passphrase = replaceLowerLetterWith(passphrase, "@#$_&-+()")
-
-# If not already present, insure there are requested number of digits in passphrase.
-  cnt = count(passphrase, Digits)
-  for _ in cnt..numDigitsinPhrase-1:
-    passphrase = replaceLowerLetterWith(passphrase, "23456789") # Don't use zero or one to avoid confusion with oh and el
-
-# Pick a random letter, uppercase it, and overwrite a different random letter
-# usually resulting in a misspelling!
-  for _ in 0..numUpperLettersinPhrase-1:
-    var i = rand(len(passphrase)-1)
-    while not passphrase[i].isLowerAscii():
-      inc i
-      if i >= len(passphrase):
-        i = 0   # wrapping around will guarantee we'll find a letter
-    let randomLetter = passphrase[i]
-    passphrase = replaceLowerLetterWith(passphrase, $randomLetter.toUpperAscii)
-  echo passphrase     # modified with more enthropy
+### ADD MORE ENTROPY by adding random chars from the passed string ###
+passphrase = passphrase.addEntropy("23456789", numDigitsinPhrase).
+                        addEntropy("@#$_&-+()", numSpecialCharsinPhrase). # Paypal only accepts these special characters: !@#$%^&*()
+                        addEntropy(toSeq('A'..'Z').join(), numUpperLettersinPhrase)
+echo passphrase     # modified with more enthropy
 echo len(passphrase), " characters"
